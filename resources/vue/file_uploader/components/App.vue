@@ -2,7 +2,6 @@
     export default {
         watch: {
             chunks(n, o) {
-                // console.log(n.length);
                 if (n.length > 0 && this.siteAvailable) {
                     this.upload();
                 }
@@ -52,7 +51,6 @@
                 this.createChunks();
             },
             upload() {
-                // console.log(323);
                 axios(this.config).then(response => {
                     console.log(response);
                     if(response.data.is_last && typeof response.data.file !== undefined){

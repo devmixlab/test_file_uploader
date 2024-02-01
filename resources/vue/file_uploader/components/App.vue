@@ -2,7 +2,7 @@
     export default {
         watch: {
             chunks(n, o) {
-                this.isFirstChunk = n.length > 0 && o.length == 0;
+                // this.isFirstChunk = n.length > 0 && o.length == 0;
 
                 if (n.length > 0 && this.siteAvailable) {
                     this.upload();
@@ -63,6 +63,7 @@
 
         methods: {
             select(event) {
+                this.isFirstChunk = true;
                 this.uploadedFileData = null;
                 this.file = event.target.files.item(0);
                 this.createChunks();
@@ -77,6 +78,9 @@
             },
             upload() {
                 axios(this.config).then(response => {
+                    if(this.isFirstChunk)
+                        this.isFirstChunk = false;
+                    
                     if(typeof response.data.sequence !== undefined && response.data.sequence == 'last' && typeof response.data.file !== undefined){
                         this.reset();
                         this.uploadedFileData = response.data.file;

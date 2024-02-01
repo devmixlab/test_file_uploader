@@ -11,8 +11,6 @@ class FileUploader extends Controller
 
     public function store(Request $request)
     {
-//        var_dump(22);
-//        die();
         $is_last = $request->has('is_last') && $request->boolean('is_last');
 
         $file = $request->file('file');

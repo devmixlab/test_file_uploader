@@ -13,6 +13,7 @@ class FileUploader extends Controller
     {
 //        var_dump(22);
 //        die();
+        $is_last = $request->has('is_last') && $request->boolean('is_last');
 
         $file = $request->file('file');
 
@@ -20,18 +21,24 @@ class FileUploader extends Controller
 
         File::append($path, $file->get());
 
-        if ($request->has('is_last') && $request->boolean('is_last')) {
-
+        if ($is_last) {
             $name = basename($path, '.part');
-
             File::move($path, public_path("uploaded_files/{$name}"));
         }
 
-
-        return response()->json([
+        $data_out = [
             'uploaded' => true,
-            'is_last' => $request->is_last
-        ]);
+            'is_last' => $is_last
+        ];
+
+        if($is_last && !empty($name)){
+            $data_out['file'] = [
+                'name' => $name,
+                'path' => '/uploaded_files/' . $name
+            ];
+        }
+
+        return response()->json($data_out);
     }
 
 

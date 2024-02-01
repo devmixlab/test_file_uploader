@@ -17,22 +17,16 @@
             return {
                 file: null,
                 chunks: [],
-                uploaded: 0,
                 siteAvailable: true,
+                chunkSize: 40000,
+                // chunkSize: 200000,
+                uploadedFileData: null,
             };
         },
 
         computed: {
-            progress() {
-                if(!this.file)
-                    return 0;
-
-                return Math.floor((this.uploaded * 100) / this.file.size);
-            },
             formData() {
                 let formData = new FormData;
-
-                console.log(this.chunks)
 
                 formData.set('is_last', this.chunks.length === 1);
                 formData.set('file', this.chunks[0], `${this.file.name}.part`);
@@ -47,27 +41,29 @@
                     headers: {
                         'Content-Type': 'application/octet-stream'
                     },
-                    onUploadProgress: event => {
-                        this.uploaded += event.loaded;
-                    }
                 };
             }
         },
 
         methods: {
             select(event) {
+                this.uploadedFileData = null;
                 this.file = event.target.files.item(0);
-                // console.log(this.file);
                 this.createChunks();
             },
             upload() {
                 // console.log(323);
                 axios(this.config).then(response => {
-                    // let chunks = this.chunks;
-                    let chunks = [].concat(this.chunks);
-                    chunks.shift();
-                    // this.$set(this.chunks, 'x', (this.arr[1].foo.x || 0) + 100)
-                    this.chunks = [].concat(chunks);
+                    console.log(response);
+                    if(response.data.is_last && typeof response.data.file !== undefined){
+                        this.file = null;
+                        this.uploadedFileData = response.data.file;
+                        this.$refs.form.reset();
+                        return;
+                    }
+
+                    this.chunks.shift();
+                    this.chunks = [].concat(this.chunks);
                 }).catch(error => {
                     this.startCheckingNetworkAvailability();
                 });
@@ -82,20 +78,17 @@
                 },1000);
             },
             createChunks() {
-                let size = 20000, chunks = Math.ceil(this.file.size / size);
-
-                console.log(chunks);
+                let chunks = Math.ceil(this.file.size / this.chunkSize);
 
                 let chunksArr = [];
 
                 for (let i = 0; i < chunks; i++) {
                     chunksArr.push(this.file.slice(
-                        i * size, Math.min(i * size + size, this.file.size), this.file.type
+                        i * this.chunkSize, Math.min(i * this.chunkSize + this.chunkSize, this.file.size), this.file.type
                     ));
                 }
 
                 this.chunks = chunksArr;
-                // console.log(chunksArr);
             }
         }
     }
@@ -106,8 +99,17 @@
 
     <div>
         <h1>File Uploader:</h1>
-        <input type="file" @change="select">
-<!--        <progress :value="progress"></progress>-->
+        <form ref="form">
+            <input ref="file" type="file" @change="select">
+        </form>
+
+        <div class="uploaded-file">
+            <b>Uploaded file:</b>
+            <small v-if="!uploadedFileData">
+                no file
+            </small>
+            <a v-else :href="uploadedFileData.path" target="_blank">{{ uploadedFileData.name }}</a>
+        </div>
     </div>
 
 </template>

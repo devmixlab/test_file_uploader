@@ -1,5 +1,5 @@
 Steps for installation
-- rename example.env into .env
+- rename .env.example into .env
 - composer update
 - npm install
 - npm run build

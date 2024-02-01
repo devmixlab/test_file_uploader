@@ -2,37 +2,62 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\FileUploadException;
+use App\Http\Requests\FileUploadRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use App\Models\File as FileModel;
+use App\Enums\FileUploadSequence;
+
 
 class FileUploader extends Controller
 {
 
-    public function store(Request $request)
+    public function store(FileUploadRequest $request)
     {
-        $is_last = $request->has('is_last') && $request->boolean('is_last');
-
         $file = $request->file('file');
 
-        $path = Storage::disk('local')->path("chunks/{$file->getClientOriginalName()}");
+        $sequence = FileUploadSequence::tryFrom($request->sequence);
 
+        if($sequence == FileUploadSequence::FIRST){
+            $client_original_name = $file->getClientOriginalName();
+            $client_original_name = rtrim($client_original_name, '.part');
+            $file_model = FileModel::create([
+                "client_name" => $client_original_name,
+                "name" => uniqid(). '.' . File::extension($client_original_name),
+            ]);
+
+            $file_model->save();
+        }else{
+            $file_model = FileModel::where([
+                "name" => $request->name,
+            ])->first();
+
+            if(empty($file_model))
+                return throw FileUploadException::forPartNotFound($request->name);
+            if($file_model->status !== 'uploading')
+                return throw FileUploadException::forPartThatAlreadyUploaded($request->name);
+        }
+
+        $path = Storage::disk('local')->path("chunks/{$file_model->part_name}");
         File::append($path, $file->get());
 
-        if ($is_last) {
-            $name = basename($path, '.part');
-            File::move($path, public_path("uploaded_files/{$name}"));
+        if ($sequence == FileUploadSequence::LAST) {
+            File::move($path, public_path("uploaded_files/{$file_model->name}"));
+            $file_model->setAsUploaded()->save();
         }
 
         $data_out = [
             'uploaded' => true,
-            'is_last' => $is_last
+            'sequence' => $sequence->value,
+            'name' => $file_model->name,
         ];
 
-        if($is_last && !empty($name)){
+        if($sequence == FileUploadSequence::LAST){
             $data_out['file'] = [
-                'name' => $name,
-                'path' => '/uploaded_files/' . $name
+                'path' => '/uploaded_files/' . $file_model->name,
+                'client_name' => $file_model->client_name,
             ];
         }
 

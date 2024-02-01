@@ -2,6 +2,8 @@
     export default {
         watch: {
             chunks(n, o) {
+                this.isFirstChunk = n.length > 0 && o.length == 0;
+
                 if (n.length > 0 && this.siteAvailable) {
                     this.upload();
                 }
@@ -15,11 +17,13 @@
         data() {
             return {
                 file: null,
+                fileName: null,
                 chunks: [],
                 siteAvailable: true,
                 chunkSize: 40000,
                 // chunkSize: 200000,
                 uploadedFileData: null,
+                isFirstChunk: false,
             };
         },
 
@@ -27,7 +31,20 @@
             formData() {
                 let formData = new FormData;
 
-                formData.set('is_last', this.chunks.length === 1);
+                if(this.fileName !== null)
+                    formData.set('name', this.fileName);
+
+                if(this.isFirstChunk){
+                    formData.set('sequence', 'first');
+                }else if(!this.isFirstChunk && this.chunks.length === 1){
+                    formData.set('sequence', 'last');
+                }else{
+                    formData.set('sequence', 'middle');
+                }
+
+                // formData.set('sequence', this.isFirstChunk);
+                // formData.set('is_first', this.isFirstChunk);
+                // formData.set('is_last', this.chunks.length === 1);
                 formData.set('file', this.chunks[0], `${this.file.name}.part`);
 
                 return formData;
@@ -52,6 +69,7 @@
             },
             reset(chunks = false) {
                 this.file = null;
+                this.fileName = null;
                 this.uploadedFileData = null;
                 this.$refs.form.reset();
                 if(chunks)
@@ -59,10 +77,14 @@
             },
             upload() {
                 axios(this.config).then(response => {
-                    if(response.data.is_last && typeof response.data.file !== undefined){
+                    if(typeof response.data.sequence !== undefined && response.data.sequence == 'last' && typeof response.data.file !== undefined){
                         this.reset();
                         this.uploadedFileData = response.data.file;
                         return;
+                    }
+
+                    if(typeof response.data.sequence !== undefined && response.data.sequence == 'first' && typeof response.data.name !== undefined){
+                        this.fileName = response.data.name;
                     }
 
                     this.chunks.shift();
@@ -115,7 +137,7 @@
             <small v-if="!uploadedFileData">
                 no file
             </small>
-            <a v-else :href="uploadedFileData.path" target="_blank">{{ uploadedFileData.name }}</a>
+            <a v-else :href="uploadedFileData.path" target="_blank">{{ uploadedFileData.client_name }}</a>
         </div>
     </div>
 

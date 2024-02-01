@@ -21,7 +21,7 @@
                 chunks: [],
                 siteAvailable: true,
                 chunkSize: 40000,
-                // chunkSize: 200000,
+                // chunkSize: 20000000,
                 uploadedFileData: null,
                 isFirstChunk: false,
             };
@@ -34,9 +34,11 @@
                 if(this.fileName !== null)
                     formData.set('name', this.fileName);
 
-                if(this.isFirstChunk){
+                if(this.isFirstChunk && this.chunks.length === 1){
+                    formData.set('sequence', 'first_last');
+                }else if(this.isFirstChunk){
                     formData.set('sequence', 'first');
-                }else if(!this.isFirstChunk && this.chunks.length === 1){
+                }else if(this.chunks.length === 1){
                     formData.set('sequence', 'last');
                 }else{
                     formData.set('sequence', 'middle');
@@ -80,8 +82,8 @@
                 axios(this.config).then(response => {
                     if(this.isFirstChunk)
                         this.isFirstChunk = false;
-                    
-                    if(typeof response.data.sequence !== undefined && response.data.sequence == 'last' && typeof response.data.file !== undefined){
+
+                    if(typeof response.data.sequence !== undefined && ['first_last','last'].includes(response.data.sequence) && typeof response.data.file !== undefined){
                         this.reset();
                         this.uploadedFileData = response.data.file;
                         return;

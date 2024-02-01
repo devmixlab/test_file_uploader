@@ -20,7 +20,7 @@ class FileUploader extends Controller
 
         $sequence = FileUploadSequence::tryFrom($request->sequence);
 
-        if($sequence == FileUploadSequence::FIRST){
+        if(in_array($sequence, [FileUploadSequence::FIRST, FileUploadSequence::FIRST_LAST])){
             $client_original_name = $file->getClientOriginalName();
             $client_original_name = rtrim($client_original_name, '.part');
             $file_model = FileModel::create([
@@ -43,7 +43,7 @@ class FileUploader extends Controller
         $path = Storage::disk('local')->path("chunks/{$file_model->part_name}");
         File::append($path, $file->get());
 
-        if ($sequence == FileUploadSequence::LAST) {
+        if (in_array($sequence, [FileUploadSequence::LAST, FileUploadSequence::FIRST_LAST])) {
             File::move($path, public_path("uploaded_files/{$file_model->name}"));
             $file_model->setAsUploaded()->save();
         }
@@ -54,7 +54,7 @@ class FileUploader extends Controller
             'name' => $file_model->name,
         ];
 
-        if($sequence == FileUploadSequence::LAST){
+        if(in_array($sequence, [FileUploadSequence::LAST, FileUploadSequence::FIRST_LAST])){
             $data_out['file'] = [
                 'path' => '/uploaded_files/' . $file_model->name,
                 'client_name' => $file_model->client_name,

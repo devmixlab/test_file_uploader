@@ -35,9 +35,9 @@ class FileUploader extends Controller
             ])->first();
 
             if(empty($file_model))
-                return throw FileUploadException::forPartNotFound($request->name);
+                throw FileUploadException::forPartNotFound($request->name);
             if($file_model->status !== 'uploading')
-                return throw FileUploadException::forPartThatAlreadyUploaded($request->name);
+                throw FileUploadException::forPartThatAlreadyUploaded($request->name);
         }
 
         $path = Storage::disk('local')->path("chunks/{$file_model->part_name}");

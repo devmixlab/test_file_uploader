@@ -5,4 +5,4 @@ Steps for installation
 - npm run build
 - php artisan key:generate
 
-For launching docker-compose up --build or php artisan serve
+For launching <b>docker-compose up --build</b> or <b>php artisan serve</b>

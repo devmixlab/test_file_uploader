@@ -19,9 +19,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-//Route::namespace('App\Http\Controllers')->group(function() {
-//
-//    Route::post('/upload_file', [FileUploader::class, 'store']);
-//
-//});
 Route::post('/upload_file', [FileUploader::class, 'store']);

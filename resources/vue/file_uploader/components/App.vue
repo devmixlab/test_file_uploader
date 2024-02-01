@@ -50,20 +50,29 @@
                 this.file = event.target.files.item(0);
                 this.createChunks();
             },
+            reset(chunks = false) {
+                this.file = null;
+                this.uploadedFileData = null;
+                this.$refs.form.reset();
+                if(chunks)
+                    this.chunks = [];
+            },
             upload() {
                 axios(this.config).then(response => {
-                    console.log(response);
                     if(response.data.is_last && typeof response.data.file !== undefined){
-                        this.file = null;
+                        this.reset();
                         this.uploadedFileData = response.data.file;
-                        this.$refs.form.reset();
                         return;
                     }
 
                     this.chunks.shift();
                     this.chunks = [].concat(this.chunks);
                 }).catch(error => {
-                    this.startCheckingNetworkAvailability();
+                    if(typeof error.code !== 'undefined' && error.code == "ERR_NETWORK"){
+                        this.startCheckingNetworkAvailability();
+                    }else{
+                        this.reset(true);
+                    }
                 });
             },
             startCheckingNetworkAvailability() {

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->string('client_name');
-            $table->string('name');
+            $table->string('name')->unique();
             $table->enum('status', ['uploading','uploaded'])->default('uploading');
 
             $table->timestamps();

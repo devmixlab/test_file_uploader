@@ -2,11 +2,8 @@
     export default {
         watch: {
             chunks(n, o) {
-                // this.isFirstChunk = n.length > 0 && o.length == 0;
-
-                if (n.length > 0 && this.siteAvailable) {
+                if (n.length > 0 && this.siteAvailable)
                     this.upload();
-                }
             },
             siteAvailable(n, o) {
                 if(n)
@@ -20,11 +17,11 @@
                 fileName: null,
                 chunks: [],
                 siteAvailable: true,
+                chunkSize: 400,
                 // chunkSize: 40000,
-                chunkSize: 400000,
+                // chunkSize: 400000,
                 // chunkSize: 20000000,
                 uploadedFileData: null,
-                isFirstChunk: false,
             };
         },
 
@@ -32,23 +29,11 @@
             formData() {
                 let formData = new FormData;
 
-                if(this.fileName !== null)
-                    formData.set('name', this.fileName);
+                if(this.chunks.length === 1)
+                    formData.set('is_last', 'true');
 
-                if(this.isFirstChunk && this.chunks.length === 1){
-                    formData.set('sequence', 'first_last');
-                }else if(this.isFirstChunk){
-                    formData.set('sequence', 'first');
-                }else if(this.chunks.length === 1){
-                    formData.set('sequence', 'last');
-                }else{
-                    formData.set('sequence', 'middle');
-                }
-
-                // formData.set('sequence', this.isFirstChunk);
-                // formData.set('is_first', this.isFirstChunk);
-                // formData.set('is_last', this.chunks.length === 1);
-                formData.set('file', this.chunks[0], `${this.file.name}.part`);
+                let fileName = this.fileName ?? this.file.name;
+                formData.set('file', this.chunks[0], `${fileName}`);
 
                 return formData;
             },
@@ -66,7 +51,6 @@
 
         methods: {
             select(event) {
-                this.isFirstChunk = true;
                 this.uploadedFileData = null;
                 this.file = event.target.files.item(0);
                 this.createChunks();
@@ -81,18 +65,14 @@
             },
             upload() {
                 axios(this.config).then(response => {
-                    if(this.isFirstChunk)
-                        this.isFirstChunk = false;
-
-                    if(typeof response.data.sequence !== undefined && ['first_last','last'].includes(response.data.sequence) && typeof response.data.file !== undefined){
+                    if(typeof response.data.file !== 'undefined'){
                         this.reset();
                         this.uploadedFileData = response.data.file;
                         return;
                     }
 
-                    if(typeof response.data.sequence !== undefined && response.data.sequence == 'first' && typeof response.data.name !== undefined){
+                    if(typeof response.data.name !== 'undefined' && this.fileName !== response.data.name)
                         this.fileName = response.data.name;
-                    }
 
                     this.chunks.shift();
                     this.chunks = [].concat(this.chunks);

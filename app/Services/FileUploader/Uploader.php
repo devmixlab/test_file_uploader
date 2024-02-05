@@ -13,50 +13,61 @@ use App\Enums\FileUploadSequence;
 class Uploader
 {
     protected string $file_name = 'file';
-    protected $file = null;
+    protected $file;
+    protected bool $is_last;
+    protected string $file_original_name;
+    protected string $file_ext;
     protected ?FileModel $file_model = null;
     protected ?FileUploadSequence $sequence = null;
-    protected $public_uploaded_files_directory = "uploaded_files";
-    protected $storage_disk_auploaded_parts_directory = "chunks";
+    protected string $public_uploaded_files_directory = "uploaded_files";
+    protected string $storage_disk_auploaded_parts_directory = "chunks";
 
     public function __construct(protected Request $request) {
         $this->file = $request->file($this->file_name);
-        $this->sequence = FileUploadSequence::tryFrom($request->sequence);
+        $this->file_name = $this->file->getClientOriginalName();
+        $this->file_ext = File::extension($this->file_name);
+//        $this->sequence = FileUploadSequence::tryFrom($request->sequence);
+        $this->is_last = $request->has('is_last') ? $request->boolean('is_last') : false;
     }
 
-    protected function isSequenceIn(array $in) : bool
-    {
-        return in_array($this->sequence, $in);
-    }
+//    protected function isSequenceIn(array $in) : bool
+//    {
+//        return in_array($this->sequence, $in);
+//    }
 
     protected function getPath(array $path, $separator = DIRECTORY_SEPARATOR, $prepend_separator = false) : string
     {
         return ($prepend_separator ? $separator : '') . implode($separator, $path);
     }
 
-    protected function setModel() : self
+    protected function generateUniqueName() : string
     {
-        if($this->isSequenceIn([FileUploadSequence::FIRST, FileUploadSequence::FIRST_LAST])){
-            $client_original_name = $this->file->getClientOriginalName();
-            $client_original_name = rtrim($client_original_name, '.part');
-            $file_model = FileModel::create([
-                "client_name" => $client_original_name,
-                "name" => uniqid(). '.' . File::extension($client_original_name),
-            ]);
+        for($i = 0; $i < 100; $i++){
+            $name = uniqid(). '.' . $this->file_ext;
+            $isExist = (bool) FileModel::where("name", $name)->count();
+            if(!$isExist)
+                break;
 
-            $file_model->save();
-        }else{
-            $file_model = FileModel::where([
-                "name" => $this->request->name,
-            ])->first();
-
-            if(empty($file_model))
-                throw FileUploadException::forPartNotFound($this->request->name);
-            if($file_model->status !== 'uploading')
-                throw FileUploadException::forPartThatAlreadyUploaded($this->request->name);
+            $name = null;
         }
 
-        $this->file_model = $file_model;
+        if(is_null($name))
+            throw FileUploadException::forUniqueNameCantBeGenerated($this->file_name);
+
+        return $name;
+    }
+
+    protected function setModel() : self
+    {
+        $file_model = FileModel::where([
+            "name" => $this->file_name,
+        ])->first();
+
+        $this->file_model = empty($file_model) || $file_model->status === 'uploaded' ?
+            FileModel::create([
+                "client_name" => $this->file_name,
+                "name" => $this->generateUniqueName(),
+            ]) : $file_model;
 
         return $this;
     }
@@ -65,10 +76,10 @@ class Uploader
     {
         $this->setModel();
 
-        $path = Storage::disk('local')->path($this->getPath([$this->storage_disk_auploaded_parts_directory, $this->file_model->part_name]));
+        $path = Storage::disk('local')->path($this->getPath([$this->storage_disk_auploaded_parts_directory, $this->file_model->name]));
         File::append($path, $this->file->get());
 
-        if($this->isSequenceIn([FileUploadSequence::LAST, FileUploadSequence::FIRST_LAST])){
+        if($this->is_last){
             File::move($path, public_path($this->getPath([$this->public_uploaded_files_directory, $this->file_model->name])));
             $this->file_model->setAsUploaded()->save();
         }
@@ -79,12 +90,10 @@ class Uploader
     public function getDataOut() : array
     {
         $out = [
-            'uploaded' => true,
-            'sequence' => $this->sequence->value,
             'name' => $this->file_model->name,
         ];
 
-        if($this->isSequenceIn([FileUploadSequence::LAST, FileUploadSequence::FIRST_LAST])){
+        if($this->is_last){
             $out['file'] = [
                 'path' => $this->getPath([$this->public_uploaded_files_directory, $this->file_model->name], '/', true),
                 'client_name' => $this->file_model->client_name,

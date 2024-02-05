@@ -3,9 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use App\Enums\FileUploadSequence;
-use Illuminate\Validation\Rules\Enum;
 
 class FileUploadRequest extends FormRequest
 {

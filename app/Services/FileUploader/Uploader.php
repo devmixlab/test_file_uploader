@@ -3,11 +3,10 @@
 namespace App\Services\FileUploader;
 
 use App\Exceptions\FileUploadException;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use App\Models\File as FileModel;
-use App\Enums\FileUploadSequence;
+use App\Http\Requests\FileUploadRequest;
 
 
 class Uploader
@@ -15,17 +14,17 @@ class Uploader
     protected string $file_name = 'file';
     protected $file;
     protected bool $is_last;
-    protected string $file_original_name;
+    protected string $file_client_name;
     protected string $file_ext;
     protected ?FileModel $file_model = null;
     protected ?FileUploadSequence $sequence = null;
     protected string $storage_uploaded_files_directory = "public";
     protected string $storage_disk_auploaded_parts_directory = "chunks";
 
-    public function __construct(protected Request $request) {
+    public function __construct(protected FileUploadRequest $request) {
         $this->file = $request->file($this->file_name);
-        $this->file_name = $this->file->getClientOriginalName();
-        $this->file_ext = File::extension($this->file_name);
+        $this->file_client_name = $this->file->getClientOriginalName();
+        $this->file_ext = File::extension($this->file_client_name);
         $this->is_last = $request->has('is_last') ? $request->boolean('is_last') : false;
     }
 
@@ -46,7 +45,7 @@ class Uploader
         }
 
         if(is_null($name))
-            throw FileUploadException::forUniqueNameCantBeGenerated($this->file_name);
+            throw FileUploadException::forUniqueNameCantBeGenerated($this->file_client_name);
 
         return $name;
     }
@@ -54,12 +53,12 @@ class Uploader
     protected function setModel() : self
     {
         $file_model = FileModel::where([
-            "name" => $this->file_name,
+            "name" => $this->file_client_name,
         ])->first();
 
         $this->file_model = empty($file_model) || $file_model->isUploaded() ?
             FileModel::create([
-                "client_name" => $this->file_name,
+                "client_name" => $this->file_client_name,
                 "name" => $this->generateUniqueName(),
             ]) : $file_model;
 

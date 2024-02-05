@@ -19,21 +19,15 @@ class Uploader
     protected string $file_ext;
     protected ?FileModel $file_model = null;
     protected ?FileUploadSequence $sequence = null;
-    protected string $public_uploaded_files_directory = "uploaded_files";
+    protected string $storage_uploaded_files_directory = "public";
     protected string $storage_disk_auploaded_parts_directory = "chunks";
 
     public function __construct(protected Request $request) {
         $this->file = $request->file($this->file_name);
         $this->file_name = $this->file->getClientOriginalName();
         $this->file_ext = File::extension($this->file_name);
-//        $this->sequence = FileUploadSequence::tryFrom($request->sequence);
         $this->is_last = $request->has('is_last') ? $request->boolean('is_last') : false;
     }
-
-//    protected function isSequenceIn(array $in) : bool
-//    {
-//        return in_array($this->sequence, $in);
-//    }
 
     protected function getPath(array $path, $separator = DIRECTORY_SEPARATOR, $prepend_separator = false) : string
     {
@@ -80,7 +74,10 @@ class Uploader
         File::append($path, $this->file->get());
 
         if($this->is_last){
-            File::move($path, public_path($this->getPath([$this->public_uploaded_files_directory, $this->file_model->name])));
+            Storage::move(
+                $this->getPath([$this->storage_disk_auploaded_parts_directory, $this->file_model->name]),
+                $this->getPath([$this->storage_uploaded_files_directory, $this->file_model->name])
+            );
             $this->file_model->setAsUploaded()->save();
         }
 
@@ -95,7 +92,7 @@ class Uploader
 
         if($this->is_last){
             $out['file'] = [
-                'path' => $this->getPath([$this->public_uploaded_files_directory, $this->file_model->name], '/', true),
+                'path' => Storage::url($this->file_model->name),
                 'client_name' => $this->file_model->client_name,
             ];
         }

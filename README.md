@@ -7,3 +7,4 @@ Steps for installation(docker/sail)
 - sail artisan migrate
 - sail npm install
 - sail npm run dev
+- sail artisan storage:link

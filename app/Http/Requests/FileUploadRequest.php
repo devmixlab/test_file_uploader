@@ -25,13 +25,8 @@ class FileUploadRequest extends FormRequest
     public function rules(): array
     {
         return [
-//            'name' => [Rule::requiredIf(fn () => in_array(FileUploadSequence::tryFrom($this->sequence), [FileUploadSequence::MIDDLE, FileUploadSequence::LAST]))],
             'file' => ['required', 'file'],
-            'is_last' => ['nullable', 'string'],
-//            'sequence' => [
-//                'required',
-//                new Enum(FileUploadSequence::class)
-//            ],
+            'is_last' => ['nullable', 'boolean'],
         ];
     }
 }

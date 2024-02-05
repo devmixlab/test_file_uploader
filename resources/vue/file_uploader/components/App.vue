@@ -17,9 +17,9 @@
                 fileName: null,
                 chunks: [],
                 siteAvailable: true,
-                chunkSize: 400,
+                // chunkSize: 400,
                 // chunkSize: 40000,
-                // chunkSize: 400000,
+                chunkSize: 400000,
                 // chunkSize: 20000000,
                 uploadedFileData: null,
             };
@@ -30,7 +30,7 @@
                 let formData = new FormData;
 
                 if(this.chunks.length === 1)
-                    formData.set('is_last', 'true');
+                    formData.set('is_last', 1);
 
                 let fileName = this.fileName ?? this.file.name;
                 formData.set('file', this.chunks[0], `${fileName}`);
@@ -41,7 +41,7 @@
                 return {
                     method: 'POST',
                     data: this.formData,
-                    url: 'api/upload_file',
+                    url: this.route('upload_file'),
                     headers: {
                         'Content-Type': 'application/octet-stream'
                     },

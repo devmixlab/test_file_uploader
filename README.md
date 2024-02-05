@@ -1,9 +1,9 @@
-Steps for installation
+Steps for installation(docker/sail)
 - rename .env.example into .env
 - composer update
-- npm install
-- npm run build
-- php artisan key:generate
-- php artisan migrate
-
-For launching <b>docker-compose up --build</b> or <b>php artisan serve</b>
+- alias sail='[ -f sail ] && sh sail || sh vendor/bin/sail'
+- sail up --build
+- sail artisan key:generate
+- sail artisan migrate
+- sail npm install
+- sail npm run dev

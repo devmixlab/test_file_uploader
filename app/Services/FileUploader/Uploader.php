@@ -57,7 +57,7 @@ class Uploader
             "name" => $this->file_name,
         ])->first();
 
-        $this->file_model = empty($file_model) || $file_model->status === 'uploaded' ?
+        $this->file_model = empty($file_model) || $file_model->isUploaded() ?
             FileModel::create([
                 "client_name" => $this->file_name,
                 "name" => $this->generateUniqueName(),

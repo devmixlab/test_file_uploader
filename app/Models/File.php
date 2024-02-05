@@ -16,8 +16,7 @@ class File extends Model
         return $this;
     }
 
-    public function getPartNameAttribute()
-    {
-        return $this->name . '.part';
+    public function isUploaded() : bool {
+        return $this->status === 'uploaded';
     }
 }
